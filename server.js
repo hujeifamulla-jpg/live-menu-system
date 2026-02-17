@@ -1,150 +1,83 @@
 ﻿const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-const path = require('path');
-
 const app = express();
-const PORT = 3000;
-const JWT_SECRET = 'your-secret-key-change-this';
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// Sample menu data (in-memory for Vercel)
+const menuData = {
+  categories: [
+    { id: 1, name: "Appetizers", display_order: 1 },
+    { id: 2, name: "Main Course", display_order: 2 },
+    { id: 3, name: "Desserts", display_order: 3 },
+    { id: 4, name: "Beverages", display_order: 4 }
+  ],
+  items: [
+    { id: 1, category_id: 1, name: "Tandoori Broccoli", description: "Charred broccoli with tahini yogurt", price: 595, is_available: 1, is_veg: 1, badge: "CHEF SPECIAL" },
+    { id: 2, category_id: 1, name: "Truffle Arancini", description: "Crispy risotto balls with black truffle", price: 795, is_available: 1, is_veg: 1, badge: "SIGNATURE" },
+    { id: 3, category_id: 1, name: "Galouti Kebab", description: "Melt-in-mouth lamb kebabs", price: 895, is_available: 1, is_veg: 0, badge: "HOUSE SPECIAL" },
+    { id: 4, category_id: 2, name: "Butter Chicken", description: "Traditional tomato-cream gravy", price: 995, is_available: 1, is_veg: 0, badge: "SIGNATURE" },
+    { id: 5, category_id: 2, name: "Dal Makhani", description: "Slow-cooked black lentils", price: 795, is_available: 1, is_veg: 1, badge: "HOUSE SPECIAL" },
+    { id: 6, category_id: 2, name: "Lamb Rack", description: "Herb-crusted with rosemary jus", price: 2495, is_available: 1, is_veg: 0, badge: "PREMIUM" },
+    { id: 7, category_id: 3, name: "Chocolate Soufflé", description: "With vanilla ice cream", price: 695, is_available: 1, is_veg: 1, badge: "SIGNATURE" },
+    { id: 8, category_id: 3, name: "Gulab Jamun", description: "With rabri and saffron", price: 495, is_available: 1, is_veg: 1, badge: "" },
+    { id: 9, category_id: 4, name: "Fresh Lime Soda", description: "Sweet/salted with mint", price: 195, is_available: 1, is_veg: 1, badge: "" },
+    { id: 10, category_id: 4, name: "Cold Coffee", description: "With vanilla ice cream", price: 295, is_available: 1, is_veg: 1, badge: "" }
+  ]
+};
+
 app.use(express.json());
 app.use(express.static('public'));
 
-// Database setup
-const db = new sqlite3.Database('./menu.db');
-
-// Initialize database tables
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        display_order INTEGER
-    )`);
-    
-    db.run(`CREATE TABLE IF NOT EXISTS menu_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category_id INTEGER,
-        name TEXT NOT NULL,
-        description TEXT,
-        price INTEGER,
-        is_available BOOLEAN DEFAULT 1,
-        is_veg BOOLEAN DEFAULT 1,
-        badge TEXT,
-        image_url TEXT,
-        display_order INTEGER,
-        FOREIGN KEY(category_id) REFERENCES categories(id)
-    )`);
-    
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        password TEXT
-    )`);
-    
-    // Insert default admin if not exists
-    const defaultPassword = bcrypt.hashSync('admin123', 10);
-    db.run(`INSERT OR IGNORE INTO users (username, password) VALUES (?, ?)`, ['admin', defaultPassword]);
-    
-    // Insert sample categories
-    const categories = ['Appetizers', 'Main Course - Indian', 'Main Course - Continental', 'Breads & Rice', 'Desserts', 'Beverages'];
-    categories.forEach((cat, index) => {
-        db.run(`INSERT OR IGNORE INTO categories (name, display_order) VALUES (?, ?)`, [cat, index]);
-    });
-});
-
-// ============ API ROUTES ============
-
-// Login endpoint
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
-        if (err || !user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-        const isValid = bcrypt.compareSync(password, user.password);
-        if (!isValid) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-        const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
-        res.json({ token, username: user.username });
-    });
-});
-
-// Get all menu items (public)
+// API endpoint to get menu
 app.get('/api/menu', (req, res) => {
-    db.all(`
-        SELECT m.*, c.name as category_name 
-        FROM menu_items m
-        JOIN categories c ON m.category_id = c.id
-        WHERE m.is_available = 1
-        ORDER BY c.display_order, m.display_order
-    `, [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json(rows);
+  const itemsWithCategories = menuData.items
+    .filter(item => item.is_available === 1)
+    .map(item => {
+      const category = menuData.categories.find(c => c.id === item.category_id);
+      return {
+        ...item,
+        category_name: category ? category.name : 'Other'
+      };
     });
+  res.json(itemsWithCategories);
 });
 
-// Middleware to verify admin token
-const verifyToken = (req, res, next) => {
-    const token = req.headers['authorization'];
-    if (!token) {
-        return res.status(401).json({ error: 'No token provided' });
-    }
-    jwt.verify(token.split(' ')[1], JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).json({ error: 'Invalid token' });
-        }
-        req.user = decoded;
-        next();
-    });
-};
-
-// Get all menu items (admin)
-app.get('/api/admin/menu', verifyToken, (req, res) => {
-    db.all(`
-        SELECT m.*, c.name as category_name 
-        FROM menu_items m
-        JOIN categories c ON m.category_id = c.id
-        ORDER BY c.display_order, m.display_order
-    `, [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json(rows);
-    });
+// Simple admin login (for demo)
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === 'admin' && password === 'admin123') {
+    res.json({ token: 'demo-token', username: 'admin' });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
 });
 
-// Toggle item availability (admin)
-app.post('/api/admin/menu/toggle', verifyToken, (req, res) => {
-    const { id, is_available } = req.body;
-    db.run('UPDATE menu_items SET is_available = ? WHERE id = ?', [is_available, id], function(err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json({ success: true, id, is_available });
-    });
+// Toggle availability (admin)
+app.post('/api/admin/menu/toggle', (req, res) => {
+  const { id, is_available } = req.body;
+  const item = menuData.items.find(i => i.id === id);
+  if (item) {
+    item.is_available = is_available;
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Item not found' });
+  }
 });
 
 // Update price (admin)
-app.post('/api/admin/menu/price', verifyToken, (req, res) => {
-    const { id, price } = req.body;
-    db.run('UPDATE menu_items SET price = ? WHERE id = ?', [price, id], function(err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json({ success: true, id, price });
-    });
+app.post('/api/admin/menu/price', (req, res) => {
+  const { id, price } = req.body;
+  const item = menuData.items.find(i => i.id === id);
+  if (item) {
+    item.price = price;
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Item not found' });
+  }
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
+
+// Export for Vercel
+module.exports = app;
