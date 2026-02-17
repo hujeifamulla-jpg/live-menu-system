@@ -1,46 +1,337 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>FINE-DINE Menu</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FINE-DINE - Live Menu</title>
     <style>
-        body { font-family: Arial; background: #1a1a1a; color: white; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        h1 { color: #c4a747; text-align: center; }
-        .item { 
-            background: #333; 
-            padding: 15px; 
-            margin: 10px 0; 
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Georgia', serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 20px;
         }
-        .price { color: #c4a747; font-weight: bold; }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #c4a747;
+            padding-bottom: 20px;
+        }
+        h1 { color: #c4a747; font-size: 3em; margin-bottom: 5px; }
+        .subtitle { color: #c4a747; font-style: italic; }
+        .filter-bar {
+            display: flex; gap: 10px; margin-bottom: 20px;
+            justify-content: center; flex-wrap: wrap;
+        }
+        .filter-btn {
+            background: #333; color: white; border: none;
+            padding: 8px 16px; border-radius: 20px; cursor: pointer;
+        }
+        .filter-btn.active { background: #c4a747; color: #1a1a1a; }
+        .category { margin-bottom: 30px; }
+        .category h2 {
+            color: #c4a747; border-left: 4px solid #c4a747;
+            padding-left: 15px; margin-bottom: 20px;
+        }
+        .menu-item {
+            display: flex; justify-content: space-between;
+            padding: 15px; border-bottom: 1px dashed #333;
+            transition: all 0.3s;
+        }
+        .menu-item:hover { background: #252525; }
+        .item-info { flex: 1; }
+        .item-header { display: flex; gap: 10px; margin-bottom: 5px; flex-wrap: wrap; }
+        .item-name { font-size: 1.2em; font-weight: bold; }
+        .veg-badge { background: #4caf50; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.7em; }
+        .nonveg-badge { background: #f44336; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.7em; }
+        .badge { background: #c4a747; color: #1a1a1a; padding: 2px 8px; border-radius: 3px; font-size: 0.7em; }
+        .sold-out { background: #666; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.7em; }
+        .item-description { color: #999; font-size: 0.9em; }
+        .item-price { color: #c4a747; font-weight: bold; font-size: 1.3em; min-width: 80px; text-align: right; }
+        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; color: #666; }
+        .admin-link {
+            position: fixed; bottom: 20px; right: 20px;
+            background: #c4a747; color: #1a1a1a;
+            padding: 10px 20px; border-radius: 30px;
+            text-decoration: none; font-weight: bold;
+        }
+        .admin-panel {
+            background: #252525; padding: 20px; border-radius: 10px;
+            margin: 20px 0; display: none;
+        }
+        .admin-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px; background: #333; margin: 5px 0; border-radius: 5px;
+        }
+        .toggle-btn {
+            padding: 5px 10px; border: none; border-radius: 3px;
+            cursor: pointer; background: #c4a747; color: #1a1a1a;
+        }
+        .price-input {
+            width: 80px; padding: 5px; background: #444;
+            border: 1px solid #555; color: white; border-radius: 3px;
+        }
+        .login-form {
+            max-width: 400px; margin: 50px auto; padding: 30px;
+            background: #252525; border-radius: 10px;
+        }
+        .login-form input {
+            width: 100%; padding: 10px; margin: 10px 0;
+            background: #333; border: 1px solid #444; color: white;
+        }
+        .login-form button {
+            width: 100%; padding: 10px; background: #c4a747;
+            color: #1a1a1a; border: none; cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>FINE-DINE</h1>
-        <div id="menu"></div>
+    <div id="app">
+        <!-- Customer View -->
+        <div id="customer-view">
+            <div class="container">
+                <div class="header">
+                    <h1>FINE-DINE</h1>
+                    <p class="subtitle">The Art of Fine Dining</p>
+                </div>
+                
+                <div class="filter-bar">
+                    <button class="filter-btn active" onclick="filterMenu('all')">All</button>
+                    <button class="filter-btn" onclick="filterMenu('veg')">Veg Only</button>
+                    <button class="filter-btn" onclick="filterMenu('nonveg')">Non-Veg</button>
+                </div>
+                
+                <div id="menu-container">Loading menu...</div>
+                
+                <div class="footer">
+                    <p>✨ All prices are in INR • Taxes extra ✨</p>
+                    <p>Open: 12:00 PM - 11:30 PM</p>
+                </div>
+            </div>
+            <button class="admin-link" onclick="showAdminLogin()">🔐 Admin</button>
+        </div>
+
+        <!-- Admin Login -->
+        <div id="admin-login" style="display: none;">
+            <div class="container">
+                <div class="login-form">
+                    <h2>Admin Login</h2>
+                    <input type="text" id="username" placeholder="Username" value="admin">
+                    <input type="password" id="password" placeholder="Password" value="admin123">
+                    <div id="login-error" style="color: #f44336;"></div>
+                    <button onclick="adminLogin()">Login</button>
+                    <button onclick="hideAdminLogin()" style="background: #666;">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="admin-panel" style="display: none;">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: #c4a747;">Admin Dashboard</h2>
+                    <button onclick="logout()" style="background: #c4a747; color: #1a1a1a; border: none; padding: 10px; cursor: pointer;">Logout</button>
+                </div>
+                <div id="admin-menu-container"></div>
+                <button onclick="showCustomerView()" style="background: #c4a747; color: #1a1a1a; border: none; padding: 10px; margin-top: 20px; cursor: pointer;">View Customer Menu</button>
+            </div>
+        </div>
     </div>
+
     <script>
-        fetch('/api/menu')
-            .then(res => res.json())
-            .then(data => {
-                const menu = document.getElementById('menu');
-                if (data.length === 0) {
-                    menu.innerHTML = '<p>No items available</p>';
-                    return;
-                }
-                menu.innerHTML = data.map(item => `
-                    <div class="item">
-                        <div>${item.name}</div>
-                        <div class="price">₹${item.price}</div>
-                    </div>
-                `).join('');
-            })
-            .catch(err => {
-                document.getElementById('menu').innerHTML = '<p>Error loading menu</p>';
+        // Menu data stored in localStorage
+        let menuData = {
+            categories: [
+                { id: 1, name: "Appetizers", display_order: 1 },
+                { id: 2, name: "Main Course - Indian", display_order: 2 },
+                { id: 3, name: "Main Course - Continental", display_order: 3 },
+                { id: 4, name: "Breads & Rice", display_order: 4 },
+                { id: 5, name: "Desserts", display_order: 5 },
+                { id: 6, name: "Beverages", display_order: 6 }
+            ],
+            items: [
+                { id: 1, category_id: 1, name: "Tandoori Broccoli", description: "Charred broccoli with tahini yogurt", price: 595, is_available: 1, is_veg: 1, badge: "CHEF SPECIAL" },
+                { id: 2, category_id: 1, name: "Truffle Arancini", description: "Crispy risotto balls with black truffle", price: 795, is_available: 1, is_veg: 1, badge: "SIGNATURE" },
+                { id: 3, category_id: 1, name: "Galouti Kebab", description: "Melt-in-mouth lamb kebabs", price: 895, is_available: 1, is_veg: 0, badge: "HOUSE SPECIAL" },
+                { id: 4, category_id: 2, name: "Butter Chicken", description: "Traditional tomato-cream gravy", price: 995, is_available: 1, is_veg: 0, badge: "SIGNATURE" },
+                { id: 5, category_id: 2, name: "Dal Makhani", description: "Slow-cooked black lentils", price: 795, is_available: 1, is_veg: 1, badge: "HOUSE SPECIAL" },
+                { id: 6, category_id: 2, name: "Paneer Lababdar", description: "Cottage cheese in rich gravy", price: 795, is_available: 1, is_veg: 1, badge: "" },
+                { id: 7, category_id: 3, name: "Lamb Rack", description: "Herb-crusted with rosemary jus", price: 2495, is_available: 1, is_veg: 0, badge: "PREMIUM" },
+                { id: 8, category_id: 3, name: "Sea Bass", description: "Pan-seared with saffron broth", price: 2195, is_available: 1, is_veg: 0, badge: "CHEF SPECIAL" },
+                { id: 9, category_id: 4, name: "Truffle Naan", description: "Tandoori bread with black truffle", price: 295, is_available: 1, is_veg: 1, badge: "" },
+                { id: 10, category_id: 4, name: "Garlic Naan", description: "Traditional naan with garlic", price: 195, is_available: 1, is_veg: 1, badge: "" },
+                { id: 11, category_id: 5, name: "Chocolate Soufflé", description: "With vanilla ice cream", price: 695, is_available: 1, is_veg: 1, badge: "SIGNATURE" },
+                { id: 12, category_id: 5, name: "Gulab Jamun", description: "With rabri and saffron", price: 495, is_available: 1, is_veg: 1, badge: "" },
+                { id: 13, category_id: 6, name: "Fresh Lime Soda", description: "Sweet/salted with mint", price: 195, is_available: 1, is_veg: 1, badge: "" },
+                { id: 14, category_id: 6, name: "Cold Coffee", description: "With vanilla ice cream", price: 295, is_available: 1, is_veg: 1, badge: "" }
+            ]
+        };
+
+        let currentFilter = 'all';
+        let isAdmin = false;
+
+        // Load data from localStorage if available
+        function loadData() {
+            const saved = localStorage.getItem('menuData');
+            if (saved) {
+                menuData = JSON.parse(saved);
+            }
+            renderMenu();
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('menuData', JSON.stringify(menuData));
+        }
+
+        // Render customer menu
+        function renderMenu() {
+            const container = document.getElementById('menu-container');
+            const categories = {};
+            
+            menuData.items.filter(item => item.is_available === 1).forEach(item => {
+                const category = menuData.categories.find(c => c.id === item.category_id);
+                const catName = category ? category.name : 'Other';
+                if (!categories[catName]) categories[catName] = [];
+                categories[catName].push(item);
             });
+
+            let html = '';
+            for (const [catName, items] of Object.entries(categories)) {
+                const filteredItems = items.filter(item => {
+                    if (currentFilter === 'all') return true;
+                    if (currentFilter === 'veg') return item.is_veg === 1;
+                    if (currentFilter === 'nonveg') return item.is_veg === 0;
+                    return true;
+                });
+
+                if (filteredItems.length === 0) continue;
+
+                html += `<div class="category"><h2>${catName}</h2>`;
+                filteredItems.forEach(item => {
+                    html += `
+                        <div class="menu-item">
+                            <div class="item-info">
+                                <div class="item-header">
+                                    <span class="item-name">${item.name}</span>
+                                    ${item.is_veg ? '<span class="veg-badge">Veg</span>' : '<span class="nonveg-badge">Non-Veg</span>'}
+                                    ${item.badge ? `<span class="badge">${item.badge}</span>` : ''}
+                                </div>
+                                <div class="item-description">${item.description || ''}</div>
+                            </div>
+                            <div class="item-price">₹${item.price}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            container.innerHTML = html || '<p style="text-align: center;">No items available</p>';
+        }
+
+        // Filter menu
+        function filterMenu(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderMenu();
+        }
+
+        // Admin functions
+        function showAdminLogin() {
+            document.getElementById('customer-view').style.display = 'none';
+            document.getElementById('admin-login').style.display = 'block';
+        }
+
+        function hideAdminLogin() {
+            document.getElementById('admin-login').style.display = 'none';
+            document.getElementById('customer-view').style.display = 'block';
+        }
+
+        function showCustomerView() {
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('customer-view').style.display = 'block';
+            renderMenu();
+        }
+
+        function adminLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === 'admin' && password === 'admin123') {
+                isAdmin = true;
+                document.getElementById('admin-login').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                renderAdminPanel();
+            } else {
+                document.getElementById('login-error').textContent = 'Invalid credentials';
+            }
+        }
+
+        function logout() {
+            isAdmin = false;
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('customer-view').style.display = 'block';
+        }
+
+        function renderAdminPanel() {
+            const container = document.getElementById('admin-menu-container');
+            let html = '<h3>Manage Menu Items</h3>';
+            
+            menuData.categories.forEach(category => {
+                const items = menuData.items.filter(item => item.category_id === category.id);
+                html += `<h4 style="color: #c4a747; margin-top: 20px;">${category.name}</h4>`;
+                
+                items.forEach(item => {
+                    html += `
+                        <div class="admin-item">
+                            <div style="flex: 1;">
+                                <strong>${item.name}</strong><br>
+                                <small>${item.description || ''}</small>
+                            </div>
+                            <div>
+                                <input type="number" class="price-input" id="price-${item.id}" value="${item.price}" step="10">
+                                <button class="toggle-btn" onclick="updatePrice(${item.id})">Update</button>
+                            </div>
+                            <button class="toggle-btn" onclick="toggleAvailability(${item.id})">
+                                ${item.is_available ? 'Hide' : 'Show'}
+                            </button>
+                        </div>
+                    `;
+                });
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function toggleAvailability(id) {
+            const item = menuData.items.find(i => i.id === id);
+            if (item) {
+                item.is_available = item.is_available ? 0 : 1;
+                saveData();
+                renderAdminPanel();
+            }
+        }
+
+        function updatePrice(id) {
+            const newPrice = document.getElementById(`price-${id}`).value;
+            const item = menuData.items.find(i => i.id === id);
+            if (item) {
+                item.price = parseInt(newPrice);
+                saveData();
+                alert('Price updated!');
+            }
+        }
+
+        // Initialize
+        loadData();
     </script>
 </body>
 </html>
