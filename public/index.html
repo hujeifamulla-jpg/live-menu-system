@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>FINE-DINE Menu</title>
+    <style>
+        body { font-family: Arial; background: #1a1a1a; color: white; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { color: #c4a747; text-align: center; }
+        .item { 
+            background: #333; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .price { color: #c4a747; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FINE-DINE</h1>
+        <div id="menu"></div>
+    </div>
+    <script>
+        fetch('/api/menu')
+            .then(res => res.json())
+            .then(data => {
+                const menu = document.getElementById('menu');
+                if (data.length === 0) {
+                    menu.innerHTML = '<p>No items available</p>';
+                    return;
+                }
+                menu.innerHTML = data.map(item => `
+                    <div class="item">
+                        <div>${item.name}</div>
+                        <div class="price">₹${item.price}</div>
+                    </div>
+                `).join('');
+            })
+            .catch(err => {
+                document.getElementById('menu').innerHTML = '<p>Error loading menu</p>';
+            });
+    </script>
+</body>
+</html>

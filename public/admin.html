@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - FINE-DINE</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .login-form {
+            max-width: 400px; margin: 100px auto;
+            background: #252525; padding: 40px; border-radius: 10px;
+        }
+        input, button {
+            width: 100%; padding: 10px; margin: 10px 0;
+            background: #333; border: 1px solid #444; color: white;
+        }
+        button { background: #c4a747; color: #1a1a1a; font-weight: bold; cursor: pointer; }
+        .error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <div id="login-section">
+            <div class="login-form">
+                <h2>Admin Login</h2>
+                <input type="text" id="username" placeholder="Username" value="admin">
+                <input type="password" id="password" placeholder="Password" value="admin123">
+                <div class="error" id="loginError"></div>
+                <button onclick="login()">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Login successful! Token: ' + data.token);
+                } else {
+                    document.getElementById('loginError').textContent = 'Invalid credentials';
+                }
+            } catch (error) {
+                document.getElementById('loginError').textContent = 'Login failed';
+            }
+        }
+    </script>
+</body>
+</html>
